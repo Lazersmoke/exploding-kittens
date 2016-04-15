@@ -2,6 +2,9 @@ module Main where
 
 import Game.Game
 
+import KittenData
+import CardActions
+
 import Data.List
 import Control.Monad
 import Control.Concurrent
@@ -17,66 +20,19 @@ main = do
       shardNames = ["Meow","Kittens","Explode","Unicorn"],
       onMessage = kittenMessage kittenstates}
     ]
-
-
-data Card = DefuseCard
-          | NopeCard
-          | ExplodingKittenCard
-          | AtackCard
-          | SkipCard
-          | FavorCard
-          | ShuffleCard
-          | SeeFutureCard
-          | ComboCard Int deriving (Eq, Show)
-
-data Player = Player {plaCli :: Client, hand :: [Card], name :: String, comm :: MVar String} deriving Eq
-instance Show Player where
-  show = name
-data KittenState = KittenState {playerList :: [Player], deck :: [Card]} deriving Eq
-
-unshuffledDeck :: [Card]
-unshuffledDeck = 
-  replicate 5 NopeCard ++
-  replicate 4 AtackCard ++
-  replicate 4 SkipCard ++
-  replicate 4 FavorCard ++
-  replicate 4 ShuffleCard ++
-  replicate 5 SeeFutureCard ++
-  (concat . replicate 4 $ map ComboCard [1..5])
-
-additionalCards :: KittenState -> [Card]
-additionalCards ks = 
-  replicate (6 - (length . playerList $ ks)) DefuseCard ++ 
-  replicate (subtract 1 . length . playerList $ ks) ExplodingKittenCard
-
-shuffleDeck :: KittenState -> IO KittenState
-shuffleDeck = return
-
-dealCards :: KittenState -> KittenState
-dealCards ks = iterate dealPlayer ks !! (length . playerList $ ks)
-
-dealPlayer :: KittenState -> KittenState
-dealPlayer ks = ks {
-  deck = drop 4 (deck ks), 
-  playerList = (last . playerList $ ks) {hand = DefuseCard : take 4 (deck ks)} : init (playerList ks)}
-
-clientToPlayer :: Client -> IO Player
-clientToPlayer cli = newEmptyMVar >>= \x -> return Player {plaCli = cli, name = cliName cli, hand = [], comm = x}
-
-prepareDeck :: KittenState -> IO KittenState
-prepareDeck ks = do
-  ks' <- shuffleDeck ks
-  shuffleDeck . (\x -> x {deck = deck x ++ additionalCards ks'}) . dealCards $ ks'
-  
+ 
 playExplodingKittens :: MVar [KittenState] -> [Client] -> IO StopCode
 playExplodingKittens ks cls = do
   players <- mapM clientToPlayer cls
   let ourState = KittenState {playerList = players, deck = unshuffledDeck}
+  -- Prepare the game to go
   newState <- prepareDeck ourState
+  -- Add it to the game list
   modifyMVar_ ks $ return . (newState:)
 
   return $ Stop "Meow"
 
+-- Play a single player's turn
 playTurn :: KittenState -> Player -> IO KittenState
 playTurn ks pla = do
   askClient "Action?" (plaCli pla)
@@ -85,6 +41,7 @@ playTurn ks pla = do
    _| "Draw" == resp -> return ()
     | "Play" `isPrefixOf` resp -> do
       let playedCard = drop 4 resp
+      ks' <- cardAction playedCard
       return ()
       
   return ks
