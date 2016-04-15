@@ -6,6 +6,8 @@ import Data.List
 import Control.Monad
 import Control.Concurrent
 
+import Debug.Trace
+
 main = do
   kittenstates <- newMVar []
   initialize [
@@ -59,32 +61,31 @@ dealPlayer ks = ks {
   playerList = (last . playerList $ ks) {hand = DefuseCard : take 4 (deck ks)} : init (playerList ks)}
 
 clientToPlayer :: Client -> IO Player
-clientToPlayer cli = newMVar [] >>= \x -> return Player {plaCli = cli, name = cliName cli, hand = [], comm = x}
+clientToPlayer cli = newEmptyMVar >>= \x -> return Player {plaCli = cli, name = cliName cli, hand = [], comm = x}
 
 prepareDeck :: KittenState -> IO KittenState
 prepareDeck ks = do
   ks' <- shuffleDeck ks
   shuffleDeck . (\x -> x {deck = deck x ++ additionalCards ks'}) . dealCards $ ks'
   
-
 playExplodingKittens :: MVar [KittenState] -> [Client] -> IO StopCode
 playExplodingKittens ks cls = do
   players <- mapM clientToPlayer cls
   let ourState = KittenState {playerList = players, deck = unshuffledDeck}
   newState <- prepareDeck ourState
   modifyMVar_ ks $ return . (newState:)
+
   return $ Stop "Meow"
 
 playTurn :: KittenState -> Player -> IO KittenState
 playTurn ks pla = do
   askClient "Action?" (plaCli pla)
   resp <- takeMVar (comm pla)
-  case () of _
-    | "Draw" == resp -> return ()
+  case () of
+   _| "Draw" == resp -> return ()
     | "Play" `isPrefixOf` resp -> do
       let playedCard = drop 4 resp
-      case playedCard of
-        "AtackCard" -> 
+      return ()
       
   return ks
   
