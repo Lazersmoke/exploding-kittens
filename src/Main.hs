@@ -3,6 +3,7 @@ module Main where
 import Game.Game
 
 import KittenData
+import KittenUtil
 import CardActions
 
 import Data.List
@@ -41,11 +42,12 @@ playTurn ks pla = do
    _| "Draw" == resp -> return ()
     | "Play" `isPrefixOf` resp -> do
       let playedCard = drop 4 resp
-      ks' <- cardAction playedCard
-      return ()
-      
+      (endTurn,ks') <- cardAction playedCard pla ks
+      if endTurn
+        then return ks'
+        else playTurn ks' pla
   return ks
-  
+
 drawForPlayer :: KittenState -> Player -> KittenState
 drawForPlayer ks pla = ks {
   deck = tail . deck $ ks,

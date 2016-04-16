@@ -5,16 +5,15 @@ import KittenUtil
 
 import Control.Applicative
 
-type SignalState = IO (Bool, KittenState)
-type CardAction = Player -> KittenState -> SignalState
+type CardAction = Player -> KittenState -> IO (Bool, KittenState)
 
 cardAction :: Card -> CardAction
 cardAction pc = case pc of
-  "AttackCard"   -> playAttackCard 
-  "FavorCard"    -> playFavorCard
-  "Skip"         -> playSkipCard
-  "Shuffle"      -> playShuffleCard
-  "SeeFutureCard"-> playSeeFutureCard
+  AttackCard    -> playAttackCard 
+  FavorCard     -> playFavorCard
+  SkipCard      -> playSkipCard
+  ShuffleCard   -> playShuffleCard
+  SeeFutureCard -> playSeeFutureCard
 
 playAttackCard :: CardAction
 playAttackCard pla ks = do
@@ -29,6 +28,16 @@ playFavorCard pla ks = do
     changePlayer target (target {hand = tail (hand target)}) ks)
 
 playSkipCard :: CardAction
-playSkipCard pla ks = return (True, ks)
+playSkipCard _ = return . (True ,) 
 
 playShuffleCard :: CardAction
+-- add (False ,) to the result of shuffleDeck on the arg 
+playShuffleCard _ = ((,) False `fmap`) . shuffleDeck 
+
+playSeeFutureCard :: CardAction
+playSeeFutureCard pla ks = tellPlayer (show . take 3 . deck $ ks) pla >> return (False,ks)
+
+
+drawCard :: Player -> KittenState -> IO KittenState
+drawCard pla ks = do
+  

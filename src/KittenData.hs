@@ -8,7 +8,7 @@ import Control.Concurrent
 data Card = DefuseCard
           | NopeCard
           | ExplodingKittenCard
-          | AtackCard
+          | AttackCard
           | SkipCard
           | FavorCard
           | ShuffleCard

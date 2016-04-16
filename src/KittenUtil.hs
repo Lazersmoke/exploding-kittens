@@ -9,7 +9,7 @@ import Control.Concurrent
 unshuffledDeck :: [Card]
 unshuffledDeck = 
   replicate 5 NopeCard ++
-  replicate 4 AtackCard ++
+  replicate 4 AttackCard ++
   replicate 4 SkipCard ++
   replicate 4 FavorCard ++
   replicate 4 ShuffleCard ++
