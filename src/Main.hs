@@ -10,27 +10,29 @@ import Data.List
 import Control.Monad
 import Control.Applicative
 import Control.Concurrent
+import Control.Arrow
 
 import Debug.Trace
 
+type CommsList = MVar [(MVar String, String)]
 main = do
-  kittenstates <- newMVar []
+  commMVar <- newMVar []
   initialize [
     GameDescriptor {
-      playGame = playExplodingKittens kittenstates,
+      playGame = playExplodingKittens commMVar,
       descName = "ExplodingKittens",
       shardNames = ["Meow","Kittens","Explode","Unicorn"],
-      onMessage = kittenMessage kittenstates}
+      onMessage = kittenMessage commMVar}
     ]
  
-playExplodingKittens :: MVar [KittenState] -> [Client] -> IO StopCode
-playExplodingKittens ks cls = do
+playExplodingKittens :: CommsList -> [Client] -> IO StopCode
+playExplodingKittens comms cls = do
   players <- mapM clientToPlayer cls
   let ourState = KittenState {nextPlayers = [], playerList = players, deck = unshuffledDeck}
   -- Prepare the game to go
   newState <- prepareDeck ourState
   -- Add it to the game list
-  modifyMVar_ ks $ return . (newState:)
+  modifyMVar_ comms $ return . (map (comm &&& name) players ++)
   ks' <- gameLoop newState
   return $ Stop "Meow"
 
@@ -38,34 +40,31 @@ gameLoop :: KittenState -> IO KittenState
 gameLoop ks = 
   if length (playerList ks) > 1
     then do
+      putStrLn "GameLoop"
+      let override = null (nextPlayers ks)
+      let currPlayer = head $ (if override then playerList else nextPlayers) ks
       let ks' = ks {
-        nextPlayers = if null (nextPlayers ks) then [] else tail (nextPlayers ks),
-        playerList = init (playerList ks) ++ [head (playerList ks)]}
-      let currPlayer = head $ (if null (nextPlayers ks) then playerList else nextPlayers) ks
+        nextPlayers = if override then [] else tail (nextPlayers ks),
+        playerList = if override then tail (playerList ks) ++ [head (playerList ks)] else playerList ks}
       playTurn currPlayer ks' >>= gameLoop
     else return ks
   
 -- Play a single player's turn
 playTurn :: PlayerAction 
 playTurn pla ks = do
-  resp <- askPlayerUntil ((||) <$> (=="Draw") . traceShowId <*> isPrefixOf "Play") "Action?" pla
+  resp <- askPlayerUntil (`elem` possibleActions) "Action?" pla
   case () of
    _| "Draw" == resp -> drawCard pla ks 
     | "Play" `isPrefixOf` resp -> do
-      let playedCard = read . drop 4 $ resp
+      let playedCard = drop 4 resp 
       (endTurn,ks') <- cardAction playedCard pla ks
       if endTurn
         then return ks'
         else playTurn pla ks'
 
-drawForPlayer :: KittenState -> Player -> KittenState
-drawForPlayer ks pla = ks {
-  deck = tail . deck $ ks,
-  playerList = pla {hand = head (deck ks) : hand pla} : delete pla (playerList ks)}
-
-kittenMessage :: MVar [KittenState] -> Client -> String -> IO ()
-kittenMessage ks c s = do 
-  kss <- readMVar ks
-  forM_ kss $ mapM_ (\x -> when (plaCli x == c) $ putMVar (comm x) s). playerList
+kittenMessage :: CommsList -> Client -> String -> IO ()
+kittenMessage commMVar c s = do 
+  comms <- readMVar commMVar
+  mapM_ (\x -> when (snd x == cliName c) $ putMVar (fst x) s) comms
   putStrLn $ "[Exploding Kittens] Got message: \"" ++ s ++ "\" from client " ++ cliName c
 

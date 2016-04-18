@@ -15,6 +15,16 @@ data Card = DefuseCard
           | SeeFutureCard
           | ComboCard Int deriving (Eq, Show, Read)
 
+possibleActions = [
+  "Draw",
+  "PlayNopeCard",
+  "PlayAttackCard",
+  "PlaySkipCard",
+  "PlayFavorCard",
+  "PlayShuffleCard",
+  "PlaySeeFutureCard"
+  ]
+
 data Player = Player {
   plaCli :: Client,
   hand :: [Card],
@@ -22,7 +32,7 @@ data Player = Player {
   comm :: MVar String} deriving Eq
 
 instance Show Player where
-  show = name
+  show p = "Player " ++ name p ++ ": " ++ show (hand p)
 
 type PlayerAction = Player -> KittenState -> IO KittenState
 type PlayerActionSignal = Player -> KittenState -> IO (Bool,KittenState)
@@ -30,6 +40,6 @@ type PlayerActionSignal = Player -> KittenState -> IO (Bool,KittenState)
 data KittenState = KittenState {
   playerList :: [Player], 
   deck :: [Card],
-  nextPlayers :: [Player]} deriving Eq
+  nextPlayers :: [Player]} deriving (Eq,Show)
 
 

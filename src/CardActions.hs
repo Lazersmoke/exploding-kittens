@@ -9,6 +9,7 @@ import KittenUtil
 import Data.Char (isDigit)
 import Data.List
 import Control.Applicative
+import Debug.Trace
 
 
 cardAction :: String -> PlayerActionSignal
@@ -21,8 +22,9 @@ cardAction pc = case pc of
 
 playAttackCard :: PlayerActionSignal
 playAttackCard pla ks = do
-  target <- getPlayer ks <$> askPlayerUntil (isPlayer ks) "Attack Target" pla 
-  return (True, ks {nextPlayers = [target, target]})
+  let target = head . tail $ dropWhile (/=pla) (cycle $ playerList ks)
+  -- Put them in nextPlayers for a turn, then their normal turn
+  return (True, ks {nextPlayers = [target]})
 
 playFavorCard :: PlayerActionSignal
 playFavorCard pla ks = do
@@ -58,7 +60,7 @@ drawCard pla ks = do
 defuseKitten :: Player -> KittenState -> IO KittenState
 defuseKitten pla ks = do
   tellPlayer "You Defused the Kitten" pla
-  position <- read <$> askPlayerUntil ((==) "" . dropWhile isDigit) "Return Kitten Location" pla
+  position <- read <$> askPlayerUntil ((&&) <$> (""==) . dropWhile isDigit <*> (""/=) . traceShowId) "Return Kitten Location" pla
   let splitDeck = splitAt position (deck ks)
   return (changePlayer pla (pla {hand = delete DefuseCard $ hand pla}) ks) {deck = fst splitDeck ++ [ExplodingKittenCard] ++ snd splitDeck}
 
