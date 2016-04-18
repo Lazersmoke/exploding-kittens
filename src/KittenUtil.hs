@@ -47,7 +47,9 @@ clientToPlayer cli = newEmptyMVar >>= \x -> return Player {plaCli = cli, name = 
 prepareDeck :: KittenState -> IO KittenState
 prepareDeck ks = do
   ks' <- shuffleDeck ks
-  shuffleDeck . (\x -> x {deck = deck x ++ additionalCards ks'}) . dealCards $ ks'
+  ks'' <- shuffleDeck . (\x -> x {deck = deck x ++ additionalCards ks'}) . dealCards $ ks'
+  mapM_ (tellPlayer =<< ("Your hand is: " ++) . show . hand) (playerList ks'')
+  return ks''
 
 askPlayerUntil :: (String -> Bool) -> String -> Player -> IO String
 askPlayerUntil pred s p = do

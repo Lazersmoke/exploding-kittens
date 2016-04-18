@@ -13,7 +13,7 @@ data Card = DefuseCard
           | FavorCard
           | ShuffleCard
           | SeeFutureCard
-          | ComboCard Int deriving (Eq, Show)
+          | ComboCard Int deriving (Eq, Show, Read)
 
 data Player = Player {
   plaCli :: Client,
@@ -23,6 +23,9 @@ data Player = Player {
 
 instance Show Player where
   show = name
+
+type PlayerAction = Player -> KittenState -> IO KittenState
+type PlayerActionSignal = Player -> KittenState -> IO (Bool,KittenState)
 
 data KittenState = KittenState {
   playerList :: [Player], 
