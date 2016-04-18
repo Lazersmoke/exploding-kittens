@@ -35,7 +35,7 @@ instance Show Player where
   show p = "Player " ++ name p ++ ": " ++ show (hand p)
 
 type PlayerAction = Player -> KittenState -> IO KittenState
-type PlayerActionSignal = Player -> KittenState -> IO (Bool,KittenState)
+type PlayerActionSignal = Player -> KittenState -> IO (Maybe Player,KittenState)
 
 data KittenState = KittenState {
   playerList :: [Player], 
@@ -43,3 +43,8 @@ data KittenState = KittenState {
   nextPlayers :: [Player]} deriving (Eq,Show)
 
 
+descriptorName :: String
+descriptorName = "ExplodingKittens"
+
+consoleLog :: String -> IO ()
+consoleLog = putStrLn . ("[" ++) . (descriptorName ++) . ("]" ++)

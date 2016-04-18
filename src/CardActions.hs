@@ -22,30 +22,38 @@ cardAction pc = case pc of
 
 playAttackCard :: PlayerActionSignal
 playAttackCard pla ks = do
-  let target = head . tail $ dropWhile (/=pla) (cycle $ playerList ks)
-  -- Put them in nextPlayers for a turn, then their normal turn
-  return (True, ks {nextPlayers = [target]})
+  consoleLog $ name pla ++ " played an attack card"
+  return . (, ks) . Just . head . tail . dropWhile (/=pla) . cycle $ playerList ks
 
 playFavorCard :: PlayerActionSignal
 playFavorCard pla ks = do
   target <- getPlayer ks <$> askPlayerUntil (isPlayer ks) "Favor Target" pla 
-  return (False, 
+  consoleLog $ name pla ++ " played a favor card against " ++ name target
+  return (Just pla, 
     changePlayer pla (pla {hand = head (hand target) : hand pla}) $ 
     changePlayer target (target {hand = tail (hand target)}) ks)
 
 playSkipCard :: PlayerActionSignal
-playSkipCard _ = return . (True ,) 
+playSkipCard pla ks = do
+  consoleLog (name pla ++ " played a skip card") 
+  return (Nothing, ks) 
 
 playShuffleCard :: PlayerActionSignal
--- add (False ,) to the result of shuffleDeck on the arg 
-playShuffleCard _ = ((False ,) `fmap`) . shuffleDeck 
+-- add (Just pla ,) to the result of shuffleDeck on the arg 
+playShuffleCard pla ks = do
+  consoleLog $ name pla ++ " played a shuffle card"
+  ((Just pla ,) `fmap`) . shuffleDeck $ ks
 
 playSeeFutureCard :: PlayerActionSignal
-playSeeFutureCard pla ks = tellPlayer (show . take 3 . deck $ ks) pla >> return (False,ks)
+playSeeFutureCard pla ks = do
+  consoleLog $ name pla ++ " played a see the future card"
+  tellPlayer (show . take 3 . deck $ ks) pla 
+  return (Just pla,ks)
 
 
 drawCard :: Player -> KittenState -> IO KittenState
 drawCard pla ks = do
+  consoleLog $ name pla ++ " drew a card from the deck"
   let drawn = head . deck $ ks
   let ks' = ks {deck = tail . deck $ ks}
   tellPlayer (("You Drew: " ++) . show $ drawn) pla
@@ -59,6 +67,7 @@ drawCard pla ks = do
 
 defuseKitten :: Player -> KittenState -> IO KittenState
 defuseKitten pla ks = do
+  consoleLog $ name pla ++ " defused the exploding kitten"
   tellPlayer "You Defused the Kitten" pla
   position <- read <$> askPlayerUntil ((&&) <$> (""==) . dropWhile isDigit <*> (""/=) . traceShowId) "Return Kitten Location" pla
   let splitDeck = splitAt position (deck ks)
@@ -66,5 +75,6 @@ defuseKitten pla ks = do
 
 killPlayer :: Player -> KittenState -> IO KittenState
 killPlayer pla ks = do
+  consoleLog $ name pla ++ " exploded!"
   tellPlayer "You Exploded" pla
   return ks {playerList = delete pla (playerList ks)}
