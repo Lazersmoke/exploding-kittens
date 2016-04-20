@@ -60,6 +60,19 @@ askPlayerUntil pred s p = do
     then return $ drop 5 readed
     else askPlayerUntil pred s p
 
+getCard :: String -> Card
+getCard s = case s of
+  "AttackCard" -> AttackCard 
+  "FavorCard" -> FavorCard
+  "SkipCard" -> SkipCard
+  "ShuffleCard" -> ShuffleCard
+  "SeeFutureCard" -> SeeFutureCard
+  "ComboCard1" -> ComboCard 1
+  "ComboCard2" -> ComboCard 2
+  "ComboCard3" -> ComboCard 3
+  "ComboCard4" -> ComboCard 4
+  "ComboCard5" -> ComboCard 5
+
 changePlayer :: Player -> Player -> KittenState -> KittenState
 changePlayer old new ks = ks {playerList = fst broken ++ [new] ++ drop 1 (snd broken)}
   where

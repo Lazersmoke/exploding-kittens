@@ -12,44 +12,34 @@ import Control.Applicative
 import Debug.Trace
 
 
-cardAction :: String -> PlayerActionSignal
-cardAction pc = case pc of
-  "AttackCard"    -> playAttackCard 
-  "FavorCard"     -> playFavorCard
-  "SkipCard"      -> playSkipCard
-  "ShuffleCard"   -> playShuffleCard
-  "SeeFutureCard" -> playSeeFutureCard
-
-playAttackCard :: PlayerActionSignal
-playAttackCard pla ks = do
-  consoleLog $ name pla ++ " played an attack card"
-  return . (, ks) . Just . head . tail . dropWhile (/=pla) . cycle $ playerList ks
-
-playFavorCard :: PlayerActionSignal
-playFavorCard pla ks = do
-  target <- getPlayer ks <$> askPlayerUntil (isPlayer ks) "Favor Target" pla 
-  consoleLog $ name pla ++ " played a favor card against " ++ name target
-  return (Just pla, 
-    changePlayer pla (pla {hand = head (hand target) : hand pla}) $ 
-    changePlayer target (target {hand = tail (hand target)}) ks)
-
-playSkipCard :: PlayerActionSignal
-playSkipCard pla ks = do
-  consoleLog (name pla ++ " played a skip card") 
-  return (Nothing, ks) 
-
-playShuffleCard :: PlayerActionSignal
--- add (Just pla ,) to the result of shuffleDeck on the arg 
-playShuffleCard pla ks = do
-  consoleLog $ name pla ++ " played a shuffle card"
-  ((Just pla ,) `fmap`) . shuffleDeck $ ks
-
-playSeeFutureCard :: PlayerActionSignal
-playSeeFutureCard pla ks = do
-  consoleLog $ name pla ++ " played a see the future card"
-  tellPlayer (show . take 3 . deck $ ks) pla 
-  return (Just pla,ks)
-
+cardAction :: Card -> PlayerActionSignal
+cardAction pc pla ks = 
+  if pc `elem` hand pla
+    then do
+      consoleLog $ name pla ++ " played a " ++ show pc
+      let ks' = changePlayer pla (pla {hand = delete pc (hand pla)}) ks
+      let pla' = getPlayer ks' (name pla)
+      case pc of
+        AttackCard    -> return . (, ks') . Just . head . tail . dropWhile (/=pla') . cycle $ playerList ks'
+        FavorCard     -> do
+          target <- getPlayer ks' <$> askPlayerUntil (isPlayer ks') "Favor Target" pla'
+          targetCard <- getCard <$> askPlayerUntil (flip elem (hand target) . getCard) "Favor Card" target
+          return (Just pla', 
+            changePlayer pla' (pla' {hand = targetCard : hand pla'}) $ 
+            changePlayer target (target {hand = delete targetCard (hand target)}) ks')
+        SkipCard      -> return (Nothing, ks') 
+        ShuffleCard   -> ((Just pla' ,) `fmap`) . shuffleDeck $ ks'
+        SeeFutureCard -> do
+          tellPlayer (show . take 3 . deck $ ks') pla'
+          return (Just pla', ks')
+        (ComboCard x) -> 
+          if ComboCard x `elem` hand pla' 
+            then do
+              target <- getPlayer ks' <$> askPlayerUntil (isPlayer ks') "Favor Target" pla'
+              let pla'' = pla' {hand = head (hand target) : delete (ComboCard x) (hand pla')}
+              return (Just pla'', changePlayer target (target {hand = tail (hand target)}) . changePlayer pla' pla'' $ ks')
+            else return (Just pla, ks)
+    else return (Just pla, ks)
 
 drawCard :: Player -> KittenState -> IO KittenState
 drawCard pla ks = do
