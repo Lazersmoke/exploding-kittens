@@ -1,6 +1,6 @@
-module KittenUtil where
+module Game.Kittens.KittenUtil where
 
-import KittenData
+import Game.Kittens.KittenData
 import Game.Game
 import Data.List
 import Data.Maybe

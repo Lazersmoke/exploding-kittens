@@ -1,10 +1,10 @@
-module Main where
+module Game.Kittens.ExplodingKittens where
 
 import Game.Game
 
-import KittenData
-import KittenUtil
-import CardActions
+import Game.Kittens.KittenData
+import Game.Kittens.KittenUtil
+import Game.Kittens.CardActions
 
 import Data.List
 import Control.Monad
@@ -34,7 +34,7 @@ playExplodingKittens comms cls = do
   -- Add it to the game list
   modifyMVar_ comms $ return . (map (comm &&& name) players ++)
   ks' <- gameLoop newState
-  return $ Stop "Meow"
+  return "Meow"
 
 gameLoop :: KittenState -> IO KittenState
 gameLoop ks = 

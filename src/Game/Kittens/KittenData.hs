@@ -1,4 +1,4 @@
-module KittenData where
+module Game.Kittens.KittenData where
 
 import Game.Game
 import Data.List

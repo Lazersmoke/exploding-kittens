@@ -1,10 +1,10 @@
 {-# LANGUAGE TupleSections #-}
-module CardActions (
+module Game.Kittens.CardActions (
   cardAction,
   drawCard) where
 
-import KittenData
-import KittenUtil
+import Game.Kittens.KittenData
+import Game.Kittens.KittenUtil
 
 import Data.Char (isDigit)
 import Data.List
