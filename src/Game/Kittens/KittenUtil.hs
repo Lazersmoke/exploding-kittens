@@ -48,7 +48,7 @@ prepareDeck :: KittenState -> IO KittenState
 prepareDeck ks = do
   ks' <- shuffleDeck ks
   ks'' <- shuffleDeck . (\x -> x {deck = deck x ++ additionalCards ks'}) . dealCards $ ks'
-  mapM_ (tellPlayer =<< ("Your hand is: " ++) . show . hand) (playerList ks'')
+  mapM_ (tellPlayer =<< ("Info|Your hand is: " ++) . show . hand) (playerList ks'')
   return ks''
 
 askPlayerUntil :: (String -> Bool) -> String -> Player -> IO String
@@ -60,18 +60,20 @@ askPlayerUntil pred s p = do
     then return $ drop 5 readed
     else askPlayerUntil pred s p
 
-getCard :: String -> Card
+getCard :: String -> Maybe Card
 getCard s = case s of
-  "AttackCard" -> AttackCard 
-  "FavorCard" -> FavorCard
-  "SkipCard" -> SkipCard
-  "ShuffleCard" -> ShuffleCard
-  "SeeFutureCard" -> SeeFutureCard
-  "ComboCard1" -> ComboCard 1
-  "ComboCard2" -> ComboCard 2
-  "ComboCard3" -> ComboCard 3
-  "ComboCard4" -> ComboCard 4
-  "ComboCard5" -> ComboCard 5
+  "AttackCard" -> Just AttackCard 
+  "FavorCard" -> Just FavorCard
+  "SkipCard" -> Just SkipCard
+  "ShuffleCard" -> Just ShuffleCard
+  "SeeFutureCard" -> Just SeeFutureCard
+  "NopeCard" -> Just NopeCard
+  "ComboCard1" -> Just $ ComboCard 1
+  "ComboCard2" -> Just $ ComboCard 2
+  "ComboCard3" -> Just $ ComboCard 3
+  "ComboCard4" -> Just $ ComboCard 4
+  "ComboCard5" -> Just $ ComboCard 5
+  _ -> Nothing
 
 changePlayer :: Player -> Player -> KittenState -> KittenState
 changePlayer old new ks = ks {playerList = fst broken ++ [new] ++ drop 1 (snd broken)}

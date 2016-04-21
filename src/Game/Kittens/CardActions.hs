@@ -6,6 +6,7 @@ module Game.Kittens.CardActions (
 import Game.Kittens.KittenData
 import Game.Kittens.KittenUtil
 
+import Data.Maybe
 import Data.Char (isDigit)
 import Data.List
 import Control.Applicative
@@ -14,20 +15,22 @@ import Debug.Trace
 
 cardAction :: Card -> PlayerActionSignal
 cardAction pc pla ks = 
-  if pc `elem` hand pla
+  if pc `elem` hand pla 
     then do
       consoleLog $ name pla ++ " played a " ++ show pc
+      tellPlayer ("Info|You Played: " ++ show pc) pla
       let ks' = changePlayer pla (pla {hand = delete pc (hand pla)}) ks
       let pla' = getPlayer ks' (name pla)
       case pc of
         AttackCard    -> return . (, ks') . Just . head . tail . dropWhile (/=pla') . cycle $ playerList ks'
         FavorCard     -> do
           target <- getPlayer ks' <$> askPlayerUntil (isPlayer ks') "Favor Target" pla'
-          targetCard <- getCard <$> askPlayerUntil (flip elem (hand target) . getCard) "Favor Card" target
+          targetCard <- fromJust . getCard <$> askPlayerUntil (\x -> isJust (getCard x) && (fromJust . getCard $ x) `elem` hand target) "Favor Card" target
           return (Just pla', 
             changePlayer pla' (pla' {hand = targetCard : hand pla'}) $ 
             changePlayer target (target {hand = delete targetCard (hand target)}) ks')
         SkipCard      -> return (Nothing, ks') 
+        NopeCard      -> return (Nothing, ks') 
         ShuffleCard   -> ((Just pla' ,) `fmap`) . shuffleDeck $ ks'
         SeeFutureCard -> do
           tellPlayer (show . take 3 . deck $ ks') pla'
@@ -46,7 +49,7 @@ drawCard pla ks = do
   consoleLog $ name pla ++ " drew a card from the deck"
   let drawn = head . deck $ ks
   let ks' = ks {deck = tail . deck $ ks}
-  tellPlayer (("You Drew: " ++) . show $ drawn) pla
+  tellPlayer (("Info|You Drew: " ++) . show $ drawn) pla
   case drawn of
     ExplodingKittenCard -> 
       if DefuseCard `elem` hand pla

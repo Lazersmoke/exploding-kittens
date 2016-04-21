@@ -10,6 +10,7 @@ import Game.Kittens.KittenData
 import Game.Kittens.KittenUtil
 import Game.Kittens.CardActions
 
+import Data.Maybe
 import Data.List
 import Control.Monad
 import Control.Applicative
@@ -49,7 +50,7 @@ playTurn pla ks = do
   case () of
    _| "Draw" == resp -> drawCard pla ks 
     | "Play" `isPrefixOf` resp -> do
-      let playedCard = getCard $ drop 4 resp 
+      let playedCard = fromJust . getCard $ drop 4 resp 
       (nextPlayer,ks') <- cardAction playedCard pla ks
       -- If next player is a Just, play a turn for them. otherwise end our turn
       maybe (return ks') (`playTurn` ks') nextPlayer 
