@@ -1,6 +1,6 @@
 module Game.Kittens.KittenData where
 
-import Game.Game
+import Game.NetworkedGameEngine
 import Data.List
 import Data.Maybe
 import Control.Concurrent

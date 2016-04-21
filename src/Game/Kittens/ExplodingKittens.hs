@@ -1,6 +1,10 @@
-module Game.Kittens.ExplodingKittens where
+module Game.Kittens.ExplodingKittens (
+  playExplodingKittens,
+  kittenMessage
+  )
+  where
 
-import Game.Game
+import Game.NetworkedGameEngine
 
 import Game.Kittens.KittenData
 import Game.Kittens.KittenUtil
@@ -12,19 +16,8 @@ import Control.Applicative
 import Control.Concurrent
 import Control.Arrow
 
-import Debug.Trace
-
 type CommsList = MVar [(MVar String, String)]
-main = do
-  commMVar <- newMVar []
-  initialize [
-    GameDescriptor {
-      playGame = playExplodingKittens commMVar,
-      descName = descriptorName,
-      shardNames = ["Meow","Kittens","Explode","Unicorn"],
-      onMessage = kittenMessage commMVar}
-    ]
- 
+
 playExplodingKittens :: CommsList -> [Client] -> IO StopCode
 playExplodingKittens comms cls = do
   players <- mapM clientToPlayer cls

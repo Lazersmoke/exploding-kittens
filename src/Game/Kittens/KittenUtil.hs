@@ -1,7 +1,7 @@
 module Game.Kittens.KittenUtil where
 
 import Game.Kittens.KittenData
-import Game.Game
+import Game.NetworkedGameEngine
 import Data.List
 import Data.Maybe
 import Control.Concurrent
