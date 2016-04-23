@@ -24,8 +24,10 @@ cardAction pc pla ks =
       case pc of
         AttackCard    -> return . (, ks') . Just . head . tail . dropWhile (/=pla') . cycle $ playerList ks'
         FavorCard     -> do
-          target <- getPlayer ks' <$> askPlayerUntil (isPlayer ks') "Favor Target" pla'
-          targetCard <- fromJust . getCard <$> askPlayerUntil (\x -> isJust (getCard x) && (fromJust . getCard $ x) `elem` hand target) "Favor Card" target
+          target <- getPlayer ks' <$> askPlayerUntil (\x -> maybe (isPlayer ks' x) (/= pla') (getPlayerSafe ks' x)) "Favor Target" pla'
+          targetCard <- fromJust . getCard . drop 4 <$> askPlayerUntil (maybe False (`elem` hand target) . getCard . drop 4) "Favor Card" target
+          tellPlayer (("Info|You Got: " ++) . show $ targetCard) pla
+          tellPlayer (("Info|You Lost: " ++) . show $ targetCard) target
           return (Just pla', 
             changePlayer pla' (pla' {hand = targetCard : hand pla'}) $ 
             changePlayer target (target {hand = delete targetCard (hand target)}) ks')
@@ -33,13 +35,16 @@ cardAction pc pla ks =
         NopeCard      -> return (Nothing, ks') 
         ShuffleCard   -> ((Just pla' ,) `fmap`) . shuffleDeck $ ks'
         SeeFutureCard -> do
-          tellPlayer (show . take 3 . deck $ ks') pla'
+          tellPlayer (("Info|The next three cards are: " ++) . show . take 3 . deck $ ks') pla'
           return (Just pla', ks')
         (ComboCard x) -> 
-          if ComboCard x `elem` hand pla' 
+          if traceShowId $ ComboCard x `elem` traceShowId (hand pla')
             then do
-              target <- getPlayer ks' <$> askPlayerUntil (isPlayer ks') "Favor Target" pla'
+              tellPlayer (("Info|You Lost: " ++) . show $ pc) pla
+              target <- getPlayer ks' <$> askPlayerUntil (\x -> maybe (isPlayer ks' x) (/= pla') (getPlayerSafe ks' x)) "Combo Target" pla'
               let pla'' = pla' {hand = head (hand target) : delete (ComboCard x) (hand pla')}
+              tellPlayer (("Info|You Got: " ++) . show . head . hand $ target) pla
+              tellPlayer (("Info|You Lost: " ++) . show . head . hand $ target) target
               return (Just pla'', changePlayer target (target {hand = tail (hand target)}) . changePlayer pla' pla'' $ ks')
             else return (Just pla, ks)
     else return (Just pla, ks)

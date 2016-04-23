@@ -3,6 +3,8 @@ module Game.Kittens.KittenUtil where
 import Game.Kittens.KittenData
 import Game.NetworkedGameEngine
 import Data.List
+import System.Random
+import System.Random.Shuffle
 import Data.Maybe
 import Control.Concurrent
 -- Constant representing the unshuffled deck, except the additional cards
@@ -27,7 +29,9 @@ additionalCards ks =
 
 -- TODO make deck random
 shuffleDeck :: KittenState -> IO KittenState
-shuffleDeck = return
+shuffleDeck ks = 
+  newStdGen >>= \x -> 
+  return ks {deck = shuffle' (deck ks) (length $ deck ks) x}
 
 -- Deal every player
 dealCards :: KittenState -> KittenState
@@ -68,11 +72,11 @@ getCard s = case s of
   "ShuffleCard" -> Just ShuffleCard
   "SeeFutureCard" -> Just SeeFutureCard
   "NopeCard" -> Just NopeCard
-  "ComboCard1" -> Just $ ComboCard 1
-  "ComboCard2" -> Just $ ComboCard 2
-  "ComboCard3" -> Just $ ComboCard 3
-  "ComboCard4" -> Just $ ComboCard 4
-  "ComboCard5" -> Just $ ComboCard 5
+  "ComboCard 1" -> Just $ ComboCard 1
+  "ComboCard 2" -> Just $ ComboCard 2
+  "ComboCard 3" -> Just $ ComboCard 3
+  "ComboCard 4" -> Just $ ComboCard 4
+  "ComboCard 5" -> Just $ ComboCard 5
   _ -> Nothing
 
 changePlayer :: Player -> Player -> KittenState -> KittenState
@@ -81,7 +85,10 @@ changePlayer old new ks = ks {playerList = fst broken ++ [new] ++ drop 1 (snd br
     broken = break (==old) $ playerList ks
 
 getPlayer :: KittenState -> String -> Player
-getPlayer ks s = fromJust . find ((==s) . name) $ playerList ks
+getPlayer = (fromJust .) . getPlayerSafe 
+
+getPlayerSafe :: KittenState -> String -> Maybe Player
+getPlayerSafe ks s = find ((==s) . name) $ playerList ks
 
 isPlayer :: KittenState -> String -> Bool
 isPlayer ks s = isJust . find ((==s) . name) $ playerList ks

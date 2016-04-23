@@ -22,7 +22,12 @@ possibleActions = [
   "PlaySkipCard",
   "PlayFavorCard",
   "PlayShuffleCard",
-  "PlaySeeFutureCard"
+  "PlaySeeFutureCard",
+  "PlayComboCard 1",
+  "PlayComboCard 2",
+  "PlayComboCard 3",
+  "PlayComboCard 4",
+  "PlayComboCard 5"
   ]
 
 data Player = Player {
