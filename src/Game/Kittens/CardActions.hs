@@ -10,7 +10,6 @@ import Data.Maybe
 import Data.Char (isDigit)
 import Data.List
 import Control.Applicative
-import Debug.Trace
 
 
 cardAction :: Card -> PlayerActionSignal
@@ -38,7 +37,7 @@ cardAction pc pla ks =
           tellPlayer (("Info|The next three cards are: " ++) . show . take 3 . deck $ ks') pla'
           return (Just pla', ks')
         (ComboCard x) -> 
-          if traceShowId $ ComboCard x `elem` traceShowId (hand pla')
+          if ComboCard x `elem` hand pla'
             then do
               tellPlayer (("Info|You Lost: " ++) . show $ pc) pla
               target <- getPlayer ks' <$> askPlayerUntil (\x -> maybe (isPlayer ks' x) (/= pla') (getPlayerSafe ks' x)) "Combo Target" pla'
@@ -68,7 +67,7 @@ defuseKitten pla ks = do
   consoleLog $ name pla ++ " defused the exploding kitten"
   tellPlayer "Info|You Defused the Kitten" pla
   tellPlayer "Info|You Lost: DefuseCard" pla
-  position <- read <$> askPlayerUntil ((&&) <$> (""==) . dropWhile isDigit <*> (""/=) . traceShowId) "Return Kitten Location" pla
+  position <- read <$> askPlayerUntil ((&&) <$> (""==) . dropWhile isDigit <*> (""/=)) "Return Kitten Location" pla
   let splitDeck = splitAt position (deck ks)
   return (changePlayer pla (pla {hand = delete DefuseCard $ hand pla}) ks) {deck = fst splitDeck ++ [ExplodingKittenCard] ++ snd splitDeck}
 
