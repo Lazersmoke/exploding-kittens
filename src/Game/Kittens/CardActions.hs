@@ -60,13 +60,14 @@ drawCard pla ks = do
       if DefuseCard `elem` hand pla
         then defuseKitten pla ks'
         else killPlayer pla ks'
-    _ -> return (changePlayer pla (pla {hand = drawn : hand pla}) ks') {deck = tail . deck $ ks'}
+    _ -> return (changePlayer pla (pla {hand = drawn : hand pla}) ks')
 
 
 defuseKitten :: Player -> KittenState -> IO KittenState
 defuseKitten pla ks = do
   consoleLog $ name pla ++ " defused the exploding kitten"
-  tellPlayer "You Defused the Kitten" pla
+  tellPlayer "Info|You Defused the Kitten" pla
+  tellPlayer "Info|You Lost: DefuseCard" pla
   position <- read <$> askPlayerUntil ((&&) <$> (""==) . dropWhile isDigit <*> (""/=) . traceShowId) "Return Kitten Location" pla
   let splitDeck = splitAt position (deck ks)
   return (changePlayer pla (pla {hand = delete DefuseCard $ hand pla}) ks) {deck = fst splitDeck ++ [ExplodingKittenCard] ++ snd splitDeck}
@@ -74,5 +75,7 @@ defuseKitten pla ks = do
 killPlayer :: Player -> KittenState -> IO KittenState
 killPlayer pla ks = do
   consoleLog $ name pla ++ " exploded!"
-  tellPlayer "You Exploded" pla
+  tellPlayer "Info|You Exploded" pla
+  tellPlayer "Stop|You Exploded" pla
+  tellPlayer "Info|You Lost: ExplodingKittenCard" pla
   return ks {playerList = delete pla (playerList ks)}

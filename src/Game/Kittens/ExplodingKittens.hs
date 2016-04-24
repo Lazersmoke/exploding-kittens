@@ -31,7 +31,8 @@ playExplodingKittens comms cls = do
   return "Meow"
 
 gameLoop :: KittenState -> IO KittenState
-gameLoop ks = 
+gameLoop ks = do
+  print $ deck ks
   if length (playerList ks) > 1
     then do
       -- Are we using a special player sequence?
